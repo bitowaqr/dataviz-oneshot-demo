@@ -1,1465 +1,1129 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import * as d3 from 'd3';
-
-// Palmer Penguins Dataset (subset for visualization)
-const rawData = [
-  { species: 'Adelie', bill_length: 39.1, bill_depth: 18.7, flipper_length: 181, body_mass: 3750 },
-  { species: 'Adelie', bill_length: 39.5, bill_depth: 17.4, flipper_length: 186, body_mass: 3800 },
-  { species: 'Adelie', bill_length: 40.3, bill_depth: 18.0, flipper_length: 195, body_mass: 3250 },
-  { species: 'Adelie', bill_length: 36.7, bill_depth: 19.3, flipper_length: 193, body_mass: 3450 },
-  { species: 'Adelie', bill_length: 39.3, bill_depth: 20.6, flipper_length: 190, body_mass: 3650 },
-  { species: 'Adelie', bill_length: 38.9, bill_depth: 17.8, flipper_length: 181, body_mass: 3625 },
-  { species: 'Adelie', bill_length: 39.2, bill_depth: 19.6, flipper_length: 195, body_mass: 4675 },
-  { species: 'Adelie', bill_length: 34.1, bill_depth: 18.1, flipper_length: 193, body_mass: 3475 },
-  { species: 'Adelie', bill_length: 42.0, bill_depth: 20.2, flipper_length: 190, body_mass: 4250 },
-  { species: 'Adelie', bill_length: 37.8, bill_depth: 17.1, flipper_length: 186, body_mass: 3300 },
-  { species: 'Adelie', bill_length: 37.8, bill_depth: 17.3, flipper_length: 180, body_mass: 3700 },
-  { species: 'Adelie', bill_length: 41.1, bill_depth: 17.6, flipper_length: 182, body_mass: 3200 },
-  { species: 'Adelie', bill_length: 38.6, bill_depth: 21.2, flipper_length: 191, body_mass: 3800 },
-  { species: 'Adelie', bill_length: 34.6, bill_depth: 21.1, flipper_length: 198, body_mass: 4400 },
-  { species: 'Adelie', bill_length: 36.6, bill_depth: 17.8, flipper_length: 185, body_mass: 3700 },
-  { species: 'Adelie', bill_length: 38.7, bill_depth: 19.0, flipper_length: 195, body_mass: 3450 },
-  { species: 'Adelie', bill_length: 42.5, bill_depth: 20.7, flipper_length: 197, body_mass: 4500 },
-  { species: 'Adelie', bill_length: 34.4, bill_depth: 18.4, flipper_length: 184, body_mass: 3325 },
-  { species: 'Adelie', bill_length: 46.0, bill_depth: 21.5, flipper_length: 194, body_mass: 4200 },
-  { species: 'Adelie', bill_length: 37.8, bill_depth: 18.3, flipper_length: 174, body_mass: 3400 },
-  { species: 'Adelie', bill_length: 37.7, bill_depth: 18.7, flipper_length: 180, body_mass: 3600 },
-  { species: 'Adelie', bill_length: 35.9, bill_depth: 19.2, flipper_length: 189, body_mass: 3800 },
-  { species: 'Adelie', bill_length: 38.2, bill_depth: 18.1, flipper_length: 185, body_mass: 3950 },
-  { species: 'Adelie', bill_length: 38.8, bill_depth: 17.2, flipper_length: 180, body_mass: 3800 },
-  { species: 'Adelie', bill_length: 35.3, bill_depth: 18.9, flipper_length: 187, body_mass: 3800 },
-  { species: 'Adelie', bill_length: 40.6, bill_depth: 18.6, flipper_length: 183, body_mass: 3550 },
-  { species: 'Adelie', bill_length: 40.5, bill_depth: 17.9, flipper_length: 187, body_mass: 3200 },
-  { species: 'Adelie', bill_length: 37.9, bill_depth: 18.6, flipper_length: 172, body_mass: 3150 },
-  { species: 'Adelie', bill_length: 40.5, bill_depth: 18.9, flipper_length: 180, body_mass: 3950 },
-  { species: 'Adelie', bill_length: 39.5, bill_depth: 16.7, flipper_length: 178, body_mass: 3250 },
-  { species: 'Adelie', bill_length: 37.2, bill_depth: 18.1, flipper_length: 178, body_mass: 3900 },
-  { species: 'Adelie', bill_length: 39.5, bill_depth: 17.8, flipper_length: 188, body_mass: 3300 },
-  { species: 'Adelie', bill_length: 40.9, bill_depth: 18.9, flipper_length: 184, body_mass: 3900 },
-  { species: 'Adelie', bill_length: 36.4, bill_depth: 17.0, flipper_length: 195, body_mass: 3325 },
-  { species: 'Adelie', bill_length: 39.2, bill_depth: 21.1, flipper_length: 196, body_mass: 4150 },
-  { species: 'Adelie', bill_length: 38.8, bill_depth: 20.0, flipper_length: 190, body_mass: 3950 },
-  { species: 'Adelie', bill_length: 42.2, bill_depth: 18.5, flipper_length: 180, body_mass: 3550 },
-  { species: 'Adelie', bill_length: 37.6, bill_depth: 19.3, flipper_length: 181, body_mass: 3300 },
-  { species: 'Adelie', bill_length: 39.8, bill_depth: 19.1, flipper_length: 184, body_mass: 4650 },
-  { species: 'Adelie', bill_length: 36.5, bill_depth: 18.0, flipper_length: 182, body_mass: 3150 },
-  { species: 'Adelie', bill_length: 40.8, bill_depth: 18.4, flipper_length: 195, body_mass: 3900 },
-  { species: 'Adelie', bill_length: 36.0, bill_depth: 18.5, flipper_length: 186, body_mass: 3100 },
-  { species: 'Adelie', bill_length: 44.1, bill_depth: 19.7, flipper_length: 196, body_mass: 4400 },
-  { species: 'Adelie', bill_length: 37.0, bill_depth: 16.9, flipper_length: 185, body_mass: 3000 },
-  { species: 'Adelie', bill_length: 39.6, bill_depth: 18.8, flipper_length: 190, body_mass: 4600 },
-  { species: 'Adelie', bill_length: 41.1, bill_depth: 19.0, flipper_length: 182, body_mass: 3425 },
-  { species: 'Adelie', bill_length: 37.5, bill_depth: 18.9, flipper_length: 179, body_mass: 2975 },
-  { species: 'Adelie', bill_length: 36.0, bill_depth: 17.9, flipper_length: 190, body_mass: 3450 },
-  { species: 'Adelie', bill_length: 42.3, bill_depth: 21.2, flipper_length: 191, body_mass: 4150 },
-  { species: 'Gentoo', bill_length: 46.1, bill_depth: 13.2, flipper_length: 211, body_mass: 4500 },
-  { species: 'Gentoo', bill_length: 50.0, bill_depth: 16.3, flipper_length: 230, body_mass: 5700 },
-  { species: 'Gentoo', bill_length: 48.7, bill_depth: 14.1, flipper_length: 210, body_mass: 4450 },
-  { species: 'Gentoo', bill_length: 50.0, bill_depth: 15.2, flipper_length: 218, body_mass: 5700 },
-  { species: 'Gentoo', bill_length: 47.6, bill_depth: 14.5, flipper_length: 215, body_mass: 5400 },
-  { species: 'Gentoo', bill_length: 46.5, bill_depth: 13.5, flipper_length: 210, body_mass: 4550 },
-  { species: 'Gentoo', bill_length: 45.4, bill_depth: 14.6, flipper_length: 211, body_mass: 4800 },
-  { species: 'Gentoo', bill_length: 46.7, bill_depth: 15.3, flipper_length: 219, body_mass: 5200 },
-  { species: 'Gentoo', bill_length: 43.3, bill_depth: 13.4, flipper_length: 209, body_mass: 4400 },
-  { species: 'Gentoo', bill_length: 46.8, bill_depth: 15.4, flipper_length: 215, body_mass: 5150 },
-  { species: 'Gentoo', bill_length: 40.9, bill_depth: 13.7, flipper_length: 214, body_mass: 4650 },
-  { species: 'Gentoo', bill_length: 49.0, bill_depth: 16.1, flipper_length: 216, body_mass: 5550 },
-  { species: 'Gentoo', bill_length: 45.5, bill_depth: 13.7, flipper_length: 214, body_mass: 4650 },
-  { species: 'Gentoo', bill_length: 48.4, bill_depth: 14.6, flipper_length: 213, body_mass: 5850 },
-  { species: 'Gentoo', bill_length: 45.8, bill_depth: 14.6, flipper_length: 210, body_mass: 4200 },
-  { species: 'Gentoo', bill_length: 49.3, bill_depth: 15.7, flipper_length: 217, body_mass: 5850 },
-  { species: 'Gentoo', bill_length: 42.0, bill_depth: 13.5, flipper_length: 210, body_mass: 4150 },
-  { species: 'Gentoo', bill_length: 49.2, bill_depth: 15.2, flipper_length: 221, body_mass: 6300 },
-  { species: 'Gentoo', bill_length: 46.2, bill_depth: 14.5, flipper_length: 209, body_mass: 4800 },
-  { species: 'Gentoo', bill_length: 48.7, bill_depth: 15.1, flipper_length: 222, body_mass: 5350 },
-  { species: 'Gentoo', bill_length: 50.2, bill_depth: 14.3, flipper_length: 218, body_mass: 5700 },
-  { species: 'Gentoo', bill_length: 45.1, bill_depth: 14.5, flipper_length: 215, body_mass: 5000 },
-  { species: 'Gentoo', bill_length: 46.5, bill_depth: 14.5, flipper_length: 213, body_mass: 4400 },
-  { species: 'Gentoo', bill_length: 46.3, bill_depth: 15.8, flipper_length: 215, body_mass: 5050 },
-  { species: 'Gentoo', bill_length: 42.9, bill_depth: 13.1, flipper_length: 215, body_mass: 5000 },
-  { species: 'Gentoo', bill_length: 46.1, bill_depth: 15.1, flipper_length: 215, body_mass: 5100 },
-  { species: 'Gentoo', bill_length: 47.8, bill_depth: 15.0, flipper_length: 215, body_mass: 5650 },
-  { species: 'Gentoo', bill_length: 48.2, bill_depth: 14.3, flipper_length: 210, body_mass: 4600 },
-  { species: 'Gentoo', bill_length: 50.0, bill_depth: 15.3, flipper_length: 220, body_mass: 5550 },
-  { species: 'Gentoo', bill_length: 47.3, bill_depth: 15.3, flipper_length: 222, body_mass: 5250 },
-  { species: 'Gentoo', bill_length: 42.8, bill_depth: 14.2, flipper_length: 209, body_mass: 4700 },
-  { species: 'Gentoo', bill_length: 45.1, bill_depth: 14.5, flipper_length: 207, body_mass: 5050 },
-  { species: 'Gentoo', bill_length: 59.6, bill_depth: 17.0, flipper_length: 230, body_mass: 6050 },
-  { species: 'Gentoo', bill_length: 49.1, bill_depth: 14.8, flipper_length: 220, body_mass: 5150 },
-  { species: 'Gentoo', bill_length: 48.4, bill_depth: 16.3, flipper_length: 220, body_mass: 5400 },
-  { species: 'Gentoo', bill_length: 42.6, bill_depth: 13.7, flipper_length: 213, body_mass: 4950 },
-  { species: 'Gentoo', bill_length: 44.4, bill_depth: 17.3, flipper_length: 219, body_mass: 5250 },
-  { species: 'Gentoo', bill_length: 44.0, bill_depth: 13.6, flipper_length: 208, body_mass: 4350 },
-  { species: 'Gentoo', bill_length: 48.7, bill_depth: 15.7, flipper_length: 208, body_mass: 5350 },
-  { species: 'Gentoo', bill_length: 42.7, bill_depth: 13.7, flipper_length: 208, body_mass: 3950 },
-  { species: 'Gentoo', bill_length: 49.6, bill_depth: 16.0, flipper_length: 225, body_mass: 5700 },
-  { species: 'Gentoo', bill_length: 45.3, bill_depth: 13.7, flipper_length: 210, body_mass: 4300 },
-  { species: 'Gentoo', bill_length: 49.6, bill_depth: 15.0, flipper_length: 216, body_mass: 4750 },
-  { species: 'Gentoo', bill_length: 50.5, bill_depth: 15.9, flipper_length: 222, body_mass: 5550 },
-  { species: 'Gentoo', bill_length: 43.6, bill_depth: 13.9, flipper_length: 217, body_mass: 4900 },
-  { species: 'Gentoo', bill_length: 45.5, bill_depth: 13.9, flipper_length: 210, body_mass: 4200 },
-  { species: 'Gentoo', bill_length: 50.0, bill_depth: 15.9, flipper_length: 224, body_mass: 5350 },
-  { species: 'Gentoo', bill_length: 44.9, bill_depth: 13.3, flipper_length: 213, body_mass: 5100 },
-  { species: 'Chinstrap', bill_length: 46.5, bill_depth: 17.9, flipper_length: 192, body_mass: 3500 },
-  { species: 'Chinstrap', bill_length: 50.0, bill_depth: 19.5, flipper_length: 196, body_mass: 3900 },
-  { species: 'Chinstrap', bill_length: 51.3, bill_depth: 19.2, flipper_length: 193, body_mass: 3650 },
-  { species: 'Chinstrap', bill_length: 45.4, bill_depth: 18.7, flipper_length: 188, body_mass: 3525 },
-  { species: 'Chinstrap', bill_length: 52.7, bill_depth: 19.8, flipper_length: 197, body_mass: 3725 },
-  { species: 'Chinstrap', bill_length: 45.2, bill_depth: 17.8, flipper_length: 198, body_mass: 3950 },
-  { species: 'Chinstrap', bill_length: 46.1, bill_depth: 18.2, flipper_length: 178, body_mass: 3250 },
-  { species: 'Chinstrap', bill_length: 51.3, bill_depth: 18.2, flipper_length: 197, body_mass: 3750 },
-  { species: 'Chinstrap', bill_length: 46.0, bill_depth: 18.9, flipper_length: 195, body_mass: 4150 },
-  { species: 'Chinstrap', bill_length: 51.3, bill_depth: 19.9, flipper_length: 198, body_mass: 3700 },
-  { species: 'Chinstrap', bill_length: 46.6, bill_depth: 17.8, flipper_length: 193, body_mass: 3800 },
-  { species: 'Chinstrap', bill_length: 51.7, bill_depth: 20.3, flipper_length: 194, body_mass: 3775 },
-  { species: 'Chinstrap', bill_length: 47.0, bill_depth: 17.3, flipper_length: 185, body_mass: 3700 },
-  { species: 'Chinstrap', bill_length: 52.0, bill_depth: 18.1, flipper_length: 201, body_mass: 4050 },
-  { species: 'Chinstrap', bill_length: 45.9, bill_depth: 17.1, flipper_length: 190, body_mass: 3575 },
-  { species: 'Chinstrap', bill_length: 50.5, bill_depth: 19.6, flipper_length: 201, body_mass: 4050 },
-  { species: 'Chinstrap', bill_length: 50.3, bill_depth: 20.0, flipper_length: 197, body_mass: 3300 },
-  { species: 'Chinstrap', bill_length: 58.0, bill_depth: 17.8, flipper_length: 181, body_mass: 3700 },
-  { species: 'Chinstrap', bill_length: 46.4, bill_depth: 18.6, flipper_length: 190, body_mass: 3450 },
-  { species: 'Chinstrap', bill_length: 49.2, bill_depth: 18.2, flipper_length: 195, body_mass: 4400 },
-  { species: 'Chinstrap', bill_length: 42.4, bill_depth: 17.3, flipper_length: 181, body_mass: 3600 },
-  { species: 'Chinstrap', bill_length: 48.5, bill_depth: 17.5, flipper_length: 191, body_mass: 3400 },
-  { species: 'Chinstrap', bill_length: 43.2, bill_depth: 16.6, flipper_length: 187, body_mass: 2900 },
-  { species: 'Chinstrap', bill_length: 50.6, bill_depth: 19.4, flipper_length: 193, body_mass: 3800 },
-  { species: 'Chinstrap', bill_length: 46.7, bill_depth: 17.9, flipper_length: 195, body_mass: 3300 },
-  { species: 'Chinstrap', bill_length: 52.0, bill_depth: 19.0, flipper_length: 197, body_mass: 4150 },
-  { species: 'Chinstrap', bill_length: 50.5, bill_depth: 18.4, flipper_length: 200, body_mass: 3400 },
-  { species: 'Chinstrap', bill_length: 49.5, bill_depth: 19.0, flipper_length: 200, body_mass: 3800 },
-  { species: 'Chinstrap', bill_length: 46.4, bill_depth: 17.8, flipper_length: 191, body_mass: 3700 },
-  { species: 'Chinstrap', bill_length: 52.8, bill_depth: 20.0, flipper_length: 205, body_mass: 4550 },
-  { species: 'Chinstrap', bill_length: 40.9, bill_depth: 16.6, flipper_length: 187, body_mass: 3200 },
-  { species: 'Chinstrap', bill_length: 54.2, bill_depth: 20.8, flipper_length: 201, body_mass: 4300 },
-  { species: 'Chinstrap', bill_length: 42.5, bill_depth: 16.7, flipper_length: 187, body_mass: 3350 },
-  { species: 'Chinstrap', bill_length: 51.0, bill_depth: 18.8, flipper_length: 203, body_mass: 4100 },
-  { species: 'Chinstrap', bill_length: 49.7, bill_depth: 18.6, flipper_length: 195, body_mass: 3600 },
-  { species: 'Chinstrap', bill_length: 47.5, bill_depth: 16.8, flipper_length: 199, body_mass: 3900 },
-  { species: 'Chinstrap', bill_length: 47.6, bill_depth: 18.3, flipper_length: 195, body_mass: 3850 },
-  { species: 'Chinstrap', bill_length: 52.0, bill_depth: 20.7, flipper_length: 210, body_mass: 4800 },
-  { species: 'Chinstrap', bill_length: 46.9, bill_depth: 16.6, flipper_length: 192, body_mass: 2700 },
-  { species: 'Chinstrap', bill_length: 53.5, bill_depth: 19.9, flipper_length: 205, body_mass: 4500 },
-  { species: 'Chinstrap', bill_length: 49.0, bill_depth: 19.5, flipper_length: 210, body_mass: 3950 },
-  { species: 'Chinstrap', bill_length: 46.2, bill_depth: 17.5, flipper_length: 187, body_mass: 3650 },
-  { species: 'Chinstrap', bill_length: 50.9, bill_depth: 19.1, flipper_length: 196, body_mass: 3550 },
-  { species: 'Chinstrap', bill_length: 45.5, bill_depth: 17.0, flipper_length: 196, body_mass: 3500 },
-  { species: 'Chinstrap', bill_length: 50.9, bill_depth: 17.9, flipper_length: 196, body_mass: 3675 },
-  { species: 'Chinstrap', bill_length: 50.8, bill_depth: 18.5, flipper_length: 201, body_mass: 4450 },
-  { species: 'Chinstrap', bill_length: 50.1, bill_depth: 17.9, flipper_length: 190, body_mass: 3400 },
-  { species: 'Chinstrap', bill_length: 49.0, bill_depth: 19.6, flipper_length: 212, body_mass: 4300 },
-  { species: 'Chinstrap', bill_length: 51.5, bill_depth: 18.7, flipper_length: 187, body_mass: 3250 },
-  { species: 'Chinstrap', bill_length: 49.8, bill_depth: 17.3, flipper_length: 198, body_mass: 3675 },
-];
-
-const variables = [
-  { key: 'bill_length', label: 'Bill Length', unit: 'mm' },
-  { key: 'bill_depth', label: 'Bill Depth', unit: 'mm' },
-  { key: 'flipper_length', label: 'Flipper Length', unit: 'mm' },
-  { key: 'body_mass', label: 'Body Mass', unit: 'g' },
-];
-
-const speciesConfig = {
-  Adelie: { 
-    color: '#FF6B6B', 
-    gradient: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%)',
-    glow: 'rgba(255, 107, 107, 0.6)',
-    icon: '🐧'
-  },
-  Gentoo: { 
-    color: '#4ECDC4', 
-    gradient: 'linear-gradient(135deg, #4ECDC4 0%, #7EDCD6 100%)',
-    glow: 'rgba(78, 205, 196, 0.6)',
-    icon: '🐧'
-  },
-  Chinstrap: { 
-    color: '#45B7D1', 
-    gradient: 'linear-gradient(135deg, #45B7D1 0%, #6FC8DD 100%)',
-    glow: 'rgba(69, 183, 209, 0.6)',
-    icon: '🐧'
-  },
-};
-
-// Custom hooks
-const useAnimatedValue = (targetValue, duration = 300) => {
-  const [value, setValue] = useState(targetValue);
-  useEffect(() => {
-    const startValue = value;
-    const startTime = performance.now();
-    const animate = (currentTime) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(startValue + (targetValue - startValue) * eased);
-      if (progress < 1) requestAnimationFrame(animate);
-    };
-    requestAnimationFrame(animate);
-  }, [targetValue]);
-  return value;
-};
-
-// Density calculation using KDE
-const calculateDensity = (data, accessor, bandwidth = 1) => {
-  const values = data.map(accessor);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const steps = 100;
-  const stepSize = (max - min) / steps;
-  
-  const kernel = (u) => Math.exp(-0.5 * u * u) / Math.sqrt(2 * Math.PI);
-  
-  const densityPoints = [];
-  for (let i = 0; i <= steps; i++) {
-    const x = min + i * stepSize;
-    let sum = 0;
-    for (const v of values) {
-      sum += kernel((x - v) / bandwidth);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Palmer Penguins - Interactive Visualization</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    densityPoints.push({ x, y: sum / (values.length * bandwidth) });
-  }
-  
-  const maxY = Math.max(...densityPoints.map(d => d.y));
-  return densityPoints.map(d => ({ x: d.x, y: d.y / maxY }));
-};
-
-// Toggle Switch Component
-const Toggle = ({ checked, onChange, label }) => (
-  <label className="toggle-container">
-    <div className={`toggle ${checked ? 'active' : ''}`} onClick={() => onChange(!checked)}>
-      <div className="toggle-track">
-        <div className="toggle-thumb" />
-      </div>
-    </div>
-    <span className="toggle-label">{label}</span>
-  </label>
-);
-
-// Species Filter Card
-const SpeciesCard = ({ species, config, checked, onChange, count, animationDelay }) => (
-  <div 
-    className={`species-card ${checked ? 'active' : ''}`}
-    style={{ 
-      '--species-color': config.color,
-      '--species-glow': config.glow,
-      animationDelay: `${animationDelay}ms`
-    }}
-    onClick={() => onChange(!checked)}
-  >
-    <div className="species-card-inner">
-      <div className="species-indicator" style={{ background: config.gradient }} />
-      <div className="species-info">
-        <span className="species-name">{species}</span>
-        <span className="species-count">{count} specimens</span>
-      </div>
-      <div className={`species-checkbox ${checked ? 'checked' : ''}`}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-          <polyline points="20,6 9,17 4,12" />
-        </svg>
-      </div>
-    </div>
-  </div>
-);
-
-// Select Dropdown
-const Select = ({ value, onChange, options, label }) => (
-  <div className="select-container">
-    <label className="select-label">{label}</label>
-    <div className="select-wrapper">
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
-        {options.map(opt => (
-          <option key={opt.key} value={opt.key}>{opt.label} ({opt.unit})</option>
-        ))}
-      </select>
-      <svg className="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polyline points="6,9 12,15 18,9" />
-      </svg>
-    </div>
-  </div>
-);
-
-// Tooltip Component
-const Tooltip = ({ data, x, y, xVar, yVar }) => {
-  if (!data) return null;
-  const xLabel = variables.find(v => v.key === xVar);
-  const yLabel = variables.find(v => v.key === yVar);
-  const config = speciesConfig[data.species];
-  
-  return (
-    <div 
-      className="tooltip"
-      style={{ 
-        left: x + 15,
-        top: y - 10,
-        '--tooltip-color': config.color
-      }}
-    >
-      <div className="tooltip-header" style={{ background: config.gradient }}>
-        <span className="tooltip-species">{data.species}</span>
-      </div>
-      <div className="tooltip-body">
-        <div className="tooltip-row">
-          <span className="tooltip-label">{xLabel.label}</span>
-          <span className="tooltip-value">{data[xVar].toFixed(1)} {xLabel.unit}</span>
-        </div>
-        <div className="tooltip-row">
-          <span className="tooltip-label">{yLabel.label}</span>
-          <span className="tooltip-value">{data[yVar].toFixed(1)} {yLabel.unit}</span>
-        </div>
-        <div className="tooltip-row">
-          <span className="tooltip-label">Body Mass</span>
-          <span className="tooltip-value">{data.body_mass.toLocaleString()} g</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Statistics Panel
-const StatsPanel = ({ data, xVar, yVar }) => {
-  const stats = useMemo(() => {
-    if (data.length === 0) return null;
     
-    const xValues = data.map(d => d[xVar]);
-    const yValues = data.map(d => d[yVar]);
-    
-    const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
-    const std = arr => {
-      const m = mean(arr);
-      return Math.sqrt(arr.reduce((acc, val) => acc + Math.pow(val - m, 2), 0) / arr.length);
-    };
-    
-    const xMean = mean(xValues);
-    const yMean = mean(yValues);
-    const xStd = std(xValues);
-    const yStd = std(yValues);
-    
-    // Pearson correlation
-    let sumNum = 0;
-    for (let i = 0; i < data.length; i++) {
-      sumNum += (xValues[i] - xMean) * (yValues[i] - yMean);
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #e2e8f0;
     }
-    const correlation = sumNum / (data.length * xStd * yStd);
     
-    return { xMean, yMean, xStd, yStd, correlation, n: data.length };
-  }, [data, xVar, yVar]);
-  
-  if (!stats) return null;
-  
-  return (
-    <div className="stats-panel">
-      <div className="stats-header">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M3 3v18h18" />
-          <path d="M18 9l-5 5-4-4-3 3" />
-        </svg>
-        <span>Statistics</span>
-      </div>
-      <div className="stats-grid">
-        <div className="stat-item">
-          <span className="stat-label">Sample Size</span>
-          <span className="stat-value">{stats.n}</span>
-        </div>
-        <div className="stat-item correlation">
-          <span className="stat-label">Correlation (r)</span>
-          <span className="stat-value" style={{ 
-            color: stats.correlation > 0 ? '#4ECDC4' : '#FF6B6B' 
-          }}>
-            {stats.correlation.toFixed(3)}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Main Chart Component
-const Chart = ({ data, xVar, yVar, showColors, showMarginal, showSmoother, hoveredPoint, setHoveredPoint }) => {
-  const margin = { top: showMarginal ? 60 : 20, right: showMarginal ? 60 : 20, bottom: 60, left: 70 };
-  const width = 700;
-  const height = 500;
-  const innerWidth = width - margin.left - margin.right;
-  const innerHeight = height - margin.top - margin.bottom;
-  
-  const xExtent = useMemo(() => {
-    const vals = rawData.map(d => d[xVar]);
-    const min = Math.min(...vals);
-    const max = Math.max(...vals);
-    const padding = (max - min) * 0.1;
-    return [min - padding, max + padding];
-  }, [xVar]);
-  
-  const yExtent = useMemo(() => {
-    const vals = rawData.map(d => d[yVar]);
-    const min = Math.min(...vals);
-    const max = Math.max(...vals);
-    const padding = (max - min) * 0.1;
-    return [min - padding, max + padding];
-  }, [yVar]);
-  
-  const xScale = useMemo(() => 
-    d3.scaleLinear().domain(xExtent).range([0, innerWidth])
-  , [xExtent, innerWidth]);
-  
-  const yScale = useMemo(() => 
-    d3.scaleLinear().domain(yExtent).range([innerHeight, 0])
-  , [yExtent, innerHeight]);
-  
-  const xTicks = xScale.ticks(6);
-  const yTicks = yScale.ticks(6);
-  
-  // Density curves for marginal plots
-  const densityCurves = useMemo(() => {
-    if (!showMarginal) return {};
+    #root {
+      min-height: 100vh;
+    }
     
-    const curves = {};
-    Object.keys(speciesConfig).forEach(species => {
-      const speciesData = data.filter(d => d.species === species);
-      if (speciesData.length > 0) {
-        curves[species] = {
-          x: calculateDensity(speciesData, d => d[xVar], 1),
-          y: calculateDensity(speciesData, d => d[yVar], 0.5),
-        };
+    .app-container {
+      min-height: 100vh;
+      padding: 2rem;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .app-container.loaded {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+      animation: slideDown 0.8s ease-out 0.2s both;
+    }
+    
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #4ECDC4 0%, #45B7D1 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 4px 20px rgba(78, 205, 196, 0.3);
+    }
+    
+    .title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .subtitle {
+      color: #64748b;
+      font-size: 1rem;
+      margin-top: 0.5rem;
+    }
+    
+    .main-content {
+      display: flex;
+      gap: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 1024px) {
+      .main-content {
+        flex-direction: column;
       }
-    });
-    return curves;
-  }, [data, xVar, yVar, showMarginal]);
-  
-  // Regression line
-  const regressionLine = useMemo(() => {
-    if (!showSmoother || data.length < 2) return null;
-    
-    const xVals = data.map(d => d[xVar]);
-    const yVals = data.map(d => d[yVar]);
-    const n = data.length;
-    
-    const xMean = xVals.reduce((a, b) => a + b, 0) / n;
-    const yMean = yVals.reduce((a, b) => a + b, 0) / n;
-    
-    let num = 0, den = 0;
-    for (let i = 0; i < n; i++) {
-      num += (xVals[i] - xMean) * (yVals[i] - yMean);
-      den += (xVals[i] - xMean) ** 2;
+      .sidebar {
+        width: 100% !important;
+        flex-direction: row !important;
+        flex-wrap: wrap;
+      }
+      .sidebar .panel {
+        flex: 1;
+        min-width: 250px;
+      }
     }
     
-    const slope = num / den;
-    const intercept = yMean - slope * xMean;
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      animation: slideRight 0.8s ease-out 0.4s both;
+    }
     
-    const x1 = xExtent[0];
-    const x2 = xExtent[1];
-    const y1 = slope * x1 + intercept;
-    const y2 = slope * x2 + intercept;
+    @keyframes slideRight {
+      from { opacity: 0; transform: translateX(-30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
     
-    return { x1: xScale(x1), y1: yScale(y1), x2: xScale(x2), y2: yScale(y2) };
-  }, [data, xVar, yVar, showSmoother, xScale, yScale, xExtent]);
+    .panel {
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .panel-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .panel-title svg {
+      width: 14px;
+      height: 14px;
+    }
+    
+    .select-container {
+      margin-bottom: 1rem;
+    }
+    
+    .select-label {
+      display: block;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-bottom: 0.5rem;
+    }
+    
+    .select-wrapper {
+      position: relative;
+    }
+    
+    .select-wrapper select {
+      width: 100%;
+      appearance: none;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      padding-right: 2.5rem;
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .select-wrapper select:hover {
+      border-color: rgba(78, 205, 196, 0.5);
+    }
+    
+    .select-wrapper select:focus {
+      outline: none;
+      border-color: #4ECDC4;
+      box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.2);
+    }
+    
+    .select-arrow {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: #64748b;
+      pointer-events: none;
+    }
+    
+    .species-filters {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .species-card {
+      cursor: pointer;
+      border-radius: 12px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: fadeInUp 0.5s ease-out both;
+    }
+    
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .species-card-inner {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.875rem 1rem;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+    
+    .species-card:hover .species-card-inner {
+      background: rgba(15, 23, 42, 0.8);
+      border-color: var(--species-color);
+      box-shadow: 0 0 20px var(--species-glow);
+    }
+    
+    .species-card.active .species-card-inner {
+      border-color: var(--species-color);
+      box-shadow: 0 0 15px var(--species-glow);
+    }
+    
+    .species-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .species-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+    
+    .species-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    
+    .species-count {
+      font-size: 0.7rem;
+      color: #64748b;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    .species-checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    
+    .species-checkbox svg {
+      width: 12px;
+      height: 12px;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.2s ease;
+    }
+    
+    .species-checkbox.checked {
+      background: var(--species-color);
+      border-color: var(--species-color);
+    }
+    
+    .species-checkbox.checked svg {
+      opacity: 1;
+      transform: scale(1);
+      color: #0f172a;
+    }
+    
+    .toggles-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+    }
+    
+    .toggle {
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    
+    .toggle-track {
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    
+    .toggle.active .toggle-track {
+      background: linear-gradient(135deg, #4ECDC4 0%, #45B7D1 100%);
+      border-color: transparent;
+    }
+    
+    .toggle-thumb {
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .toggle.active .toggle-thumb {
+      transform: translateX(20px);
+    }
+    
+    .toggle-label {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      transition: color 0.2s ease;
+    }
+    
+    .toggle-container:hover .toggle-label {
+      color: #e2e8f0;
+    }
+    
+    .chart-container {
+      flex: 1;
+      background: rgba(30, 41, 59, 0.4);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 20px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      animation: fadeIn 0.8s ease-out 0.6s both;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .chart-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(78, 205, 196, 0.5), transparent);
+    }
+    
+    .chart-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    .chart-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    
+    .legend {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+    
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    
+    .chart-wrapper {
+      position: relative;
+      overflow-x: auto;
+    }
+    
+    .chart-svg {
+      display: block;
+      min-width: 700px;
+    }
+    
+    .axis-tick {
+      fill: #64748b;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    .axis-label {
+      fill: #94a3b8;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .data-point {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .point-group {
+      animation: pointAppear 0.5s ease-out both;
+    }
+    
+    @keyframes pointAppear {
+      from { opacity: 0; transform: scale(0); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    
+    .point-glow {
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.2); }
+    }
+    
+    .density-path {
+      opacity: 0;
+      animation: densityFade 0.8s ease-out 0.8s forwards;
+    }
+    
+    .density-line {
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+      animation: drawLine 1.5s ease-out 0.8s forwards;
+    }
+    
+    @keyframes densityFade {
+      to { opacity: 1; }
+    }
+    
+    @keyframes drawLine {
+      to { stroke-dashoffset: 0; }
+    }
+    
+    .regression-line {
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+      animation: drawLine 1s ease-out 0.5s forwards;
+    }
+    
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      animation: tooltipAppear 0.2s ease-out;
+      min-width: 180px;
+    }
+    
+    @keyframes tooltipAppear {
+      from { opacity: 0; transform: translateY(5px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    
+    .tooltip-header {
+      padding: 0.5rem 0.75rem;
+    }
+    
+    .tooltip-species {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #0f172a;
+    }
+    
+    .tooltip-body {
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .tooltip-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    
+    .tooltip-label {
+      color: #64748b;
+      font-size: 0.75rem;
+    }
+    
+    .tooltip-value {
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    
+    .stats-panel {
+      margin-top: 1rem;
+    }
+    
+    .stats-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #64748b;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+    
+    .stats-header svg {
+      width: 14px;
+      height: 14px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    
+    .stat-item {
+      background: rgba(15, 23, 42, 0.6);
+      padding: 0.75rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .stat-item.correlation {
+      grid-column: span 2;
+    }
+    
+    .stat-label {
+      display: block;
+      font-size: 0.7rem;
+      color: #64748b;
+      margin-bottom: 0.25rem;
+    }
+    
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      color: #475569;
+      font-size: 0.8rem;
+    }
+    
+    .footer a {
+      color: #4ECDC4;
+      text-decoration: none;
+    }
+    
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
   
-  const xVarLabel = variables.find(v => v.key === xVar);
-  const yVarLabel = variables.find(v => v.key === yVar);
-  
-  return (
-    <svg width={width} height={height} className="chart-svg">
-      <defs>
-        {Object.entries(speciesConfig).map(([species, config]) => (
-          <React.Fragment key={species}>
-            <radialGradient id={`glow-${species}`}>
-              <stop offset="0%" stopColor={config.color} stopOpacity="0.8" />
-              <stop offset="100%" stopColor={config.color} stopOpacity="0" />
-            </radialGradient>
-            <filter id={`shadow-${species}`} x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor={config.color} floodOpacity="0.5" />
-            </filter>
-            <linearGradient id={`density-x-${species}`} x1="0%" y1="100%" x2="0%" y2="0%">
-              <stop offset="0%" stopColor={config.color} stopOpacity="0.1" />
-              <stop offset="100%" stopColor={config.color} stopOpacity="0.4" />
-            </linearGradient>
-            <linearGradient id={`density-y-${species}`} x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor={config.color} stopOpacity="0.1" />
-              <stop offset="100%" stopColor={config.color} stopOpacity="0.4" />
-            </linearGradient>
-          </React.Fragment>
-        ))}
-        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-        </pattern>
-      </defs>
-      
-      <g transform={`translate(${margin.left}, ${margin.top})`}>
-        {/* Background */}
-        <rect 
-          x={0} y={0} 
-          width={innerWidth} height={innerHeight} 
-          fill="rgba(15, 23, 42, 0.6)"
-          rx="8"
-        />
-        <rect 
-          x={0} y={0} 
-          width={innerWidth} height={innerHeight} 
-          fill="url(#grid)"
-          rx="8"
-        />
-        
-        {/* Grid lines */}
-        {xTicks.map((tick, i) => (
-          <line
-            key={`x-grid-${i}`}
-            x1={xScale(tick)}
-            y1={0}
-            x2={xScale(tick)}
-            y2={innerHeight}
-            stroke="rgba(255,255,255,0.05)"
-            strokeDasharray="4,4"
-          />
-        ))}
-        {yTicks.map((tick, i) => (
-          <line
-            key={`y-grid-${i}`}
-            x1={0}
-            y1={yScale(tick)}
-            x2={innerWidth}
-            y2={yScale(tick)}
-            stroke="rgba(255,255,255,0.05)"
-            strokeDasharray="4,4"
-          />
-        ))}
-        
-        {/* Regression line */}
-        {regressionLine && (
-          <line
-            x1={regressionLine.x1}
-            y1={regressionLine.y1}
-            x2={regressionLine.x2}
-            y2={regressionLine.y2}
-            stroke="rgba(255,255,255,0.4)"
-            strokeWidth="2"
-            strokeDasharray="8,4"
-            className="regression-line"
-          />
-        )}
-        
-        {/* Data points */}
-        <g className="points-container">
-          {data.map((d, i) => {
-            const config = speciesConfig[d.species];
-            const isHovered = hoveredPoint === d;
-            const cx = xScale(d[xVar]);
-            const cy = yScale(d[yVar]);
-            
-            return (
-              <g 
-                key={i}
-                className={`point-group ${isHovered ? 'hovered' : ''}`}
-                style={{ '--delay': `${i * 5}ms` }}
-              >
-                {isHovered && (
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={20}
-                    fill={`url(#glow-${d.species})`}
-                    className="point-glow"
-                  />
-                )}
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={isHovered ? 8 : 5}
-                  fill={showColors ? config.color : 'rgba(255,255,255,0.7)'}
-                  stroke={showColors ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.5)'}
-                  strokeWidth={isHovered ? 2 : 1}
-                  filter={isHovered && showColors ? `url(#shadow-${d.species})` : undefined}
-                  className="data-point"
-                  onMouseEnter={() => setHoveredPoint(d)}
-                  onMouseLeave={() => setHoveredPoint(null)}
-                />
-              </g>
-            );
-          })}
-        </g>
-        
-        {/* X Axis */}
-        <g transform={`translate(0, ${innerHeight})`}>
-          <line x1={0} y1={0} x2={innerWidth} y2={0} stroke="rgba(255,255,255,0.2)" />
-          {xTicks.map((tick, i) => (
-            <g key={i} transform={`translate(${xScale(tick)}, 0)`}>
-              <line y1={0} y2={6} stroke="rgba(255,255,255,0.3)" />
-              <text y={20} textAnchor="middle" className="axis-tick">{tick}</text>
-            </g>
-          ))}
-          <text 
-            x={innerWidth / 2} 
-            y={45} 
-            textAnchor="middle" 
-            className="axis-label"
-          >
-            {xVarLabel.label} ({xVarLabel.unit})
-          </text>
-        </g>
-        
-        {/* Y Axis */}
-        <g>
-          <line x1={0} y1={0} x2={0} y2={innerHeight} stroke="rgba(255,255,255,0.2)" />
-          {yTicks.map((tick, i) => (
-            <g key={i} transform={`translate(0, ${yScale(tick)})`}>
-              <line x1={-6} x2={0} stroke="rgba(255,255,255,0.3)" />
-              <text x={-10} textAnchor="end" dominantBaseline="middle" className="axis-tick">{tick}</text>
-            </g>
-          ))}
-          <text 
-            transform={`translate(-50, ${innerHeight / 2}) rotate(-90)`}
-            textAnchor="middle" 
-            className="axis-label"
-          >
-            {yVarLabel.label} ({yVarLabel.unit})
-          </text>
-        </g>
-        
-        {/* Marginal X density (top) */}
-        {showMarginal && (
-          <g transform={`translate(0, -50)`}>
-            {Object.entries(densityCurves).map(([species, curves]) => {
-              if (!curves || !curves.x) return null;
-              const config = speciesConfig[species];
-              const pathData = curves.x.map((p, i) => 
-                `${i === 0 ? 'M' : 'L'} ${xScale(p.x)} ${50 - p.y * 40}`
-              ).join(' ') + ` L ${xScale(curves.x[curves.x.length - 1].x)} 50 L ${xScale(curves.x[0].x)} 50 Z`;
-              
-              return (
-                <g key={species}>
-                  <path
-                    d={pathData}
-                    fill={`url(#density-x-${species})`}
-                    className="density-path"
-                  />
-                  <path
-                    d={curves.x.map((p, i) => 
-                      `${i === 0 ? 'M' : 'L'} ${xScale(p.x)} ${50 - p.y * 40}`
-                    ).join(' ')}
-                    fill="none"
-                    stroke={config.color}
-                    strokeWidth="2"
-                    opacity="0.8"
-                    className="density-line"
-                  />
-                </g>
-              );
-            })}
-          </g>
-        )}
-        
-        {/* Marginal Y density (right) */}
-        {showMarginal && (
-          <g transform={`translate(${innerWidth + 10}, 0)`}>
-            {Object.entries(densityCurves).map(([species, curves]) => {
-              if (!curves || !curves.y) return null;
-              const config = speciesConfig[species];
-              const pathData = curves.y.map((p, i) => 
-                `${i === 0 ? 'M' : 'L'} ${p.y * 40} ${yScale(p.x)}`
-              ).join(' ') + ` L 0 ${yScale(curves.y[curves.y.length - 1].x)} L 0 ${yScale(curves.y[0].x)} Z`;
-              
-              return (
-                <g key={species}>
-                  <path
-                    d={pathData}
-                    fill={`url(#density-y-${species})`}
-                    className="density-path"
-                  />
-                  <path
-                    d={curves.y.map((p, i) => 
-                      `${i === 0 ? 'M' : 'L'} ${p.y * 40} ${yScale(p.x)}`
-                    ).join(' ')}
-                    fill="none"
-                    stroke={config.color}
-                    strokeWidth="2"
-                    opacity="0.8"
-                    className="density-line"
-                  />
-                </g>
-              );
-            })}
-          </g>
-        )}
-      </g>
-    </svg>
-  );
-};
+  <script type="text/babel">
+    const { useState, useMemo, useEffect, useCallback } = React;
 
-// Main App
-export default function PalmerPenguinsViz() {
-  const [xVar, setXVar] = useState('bill_length');
-  const [yVar, setYVar] = useState('bill_depth');
-  const [selectedSpecies, setSelectedSpecies] = useState({
-    Adelie: true,
-    Gentoo: true,
-    Chinstrap: true,
-  });
-  const [showColors, setShowColors] = useState(true);
-  const [showMarginal, setShowMarginal] = useState(true);
-  const [showSmoother, setShowSmoother] = useState(false);
-  const [hoveredPoint, setHoveredPoint] = useState(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [isLoaded, setIsLoaded] = useState(false);
-  
-  useEffect(() => {
-    setTimeout(() => setIsLoaded(true), 100);
-  }, []);
-  
-  const handleMouseMove = useCallback((e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  }, []);
-  
-  const filteredData = useMemo(() => 
-    rawData.filter(d => selectedSpecies[d.species])
-  , [selectedSpecies]);
-  
-  const speciesCounts = useMemo(() => {
-    const counts = {};
-    Object.keys(speciesConfig).forEach(s => {
-      counts[s] = rawData.filter(d => d.species === s).length;
-    });
-    return counts;
-  }, []);
-  
-  return (
-    <div className={`app-container ${isLoaded ? 'loaded' : ''}`}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        
-        .app-container {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          color: #e2e8f0;
-          padding: 2rem;
-          opacity: 0;
-          transform: translateY(20px);
-          transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .app-container.loaded {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        
-        .header {
-          text-align: center;
-          margin-bottom: 2rem;
-          animation: slideDown 0.8s ease-out 0.2s both;
-        }
-        
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .logo-container {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 1rem;
-          margin-bottom: 0.5rem;
-        }
-        
-        .logo-icon {
-          width: 48px;
-          height: 48px;
-          background: linear-gradient(135deg, #4ECDC4 0%, #45B7D1 100%);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 24px;
-          box-shadow: 0 4px 20px rgba(78, 205, 196, 0.3);
-        }
-        
-        .title {
-          font-size: 2.5rem;
-          font-weight: 700;
-          background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        
-        .subtitle {
-          color: #64748b;
-          font-size: 1rem;
-          margin-top: 0.5rem;
-        }
-        
-        .main-content {
-          display: flex;
-          gap: 2rem;
-          max-width: 1400px;
-          margin: 0 auto;
-        }
-        
-        .sidebar {
-          width: 280px;
-          flex-shrink: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-          animation: slideRight 0.8s ease-out 0.4s both;
-        }
-        
-        @keyframes slideRight {
-          from {
-            opacity: 0;
-            transform: translateX(-30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        .panel {
-          background: rgba(30, 41, 59, 0.6);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 16px;
-          padding: 1.5rem;
-          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-        }
-        
-        .panel-title {
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: #64748b;
-          margin-bottom: 1rem;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        
-        .panel-title svg {
-          width: 14px;
-          height: 14px;
-        }
-        
-        .select-container {
-          margin-bottom: 1rem;
-        }
-        
-        .select-label {
-          display: block;
-          font-size: 0.8rem;
-          color: #94a3b8;
-          margin-bottom: 0.5rem;
-        }
-        
-        .select-wrapper {
-          position: relative;
-        }
-        
-        .select-wrapper select {
-          width: 100%;
-          appearance: none;
-          background: rgba(15, 23, 42, 0.8);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 10px;
-          padding: 0.75rem 1rem;
-          padding-right: 2.5rem;
-          color: #e2e8f0;
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.85rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-        
-        .select-wrapper select:hover {
-          border-color: rgba(78, 205, 196, 0.5);
-        }
-        
-        .select-wrapper select:focus {
-          outline: none;
-          border-color: #4ECDC4;
-          box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.2);
-        }
-        
-        .select-arrow {
-          position: absolute;
-          right: 0.75rem;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 18px;
-          height: 18px;
-          color: #64748b;
-          pointer-events: none;
-        }
-        
-        .species-filters {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-        
-        .species-card {
-          cursor: pointer;
-          border-radius: 12px;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          animation: fadeInUp 0.5s ease-out both;
-          animation-delay: var(--delay, 0ms);
-        }
-        
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .species-card-inner {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.875rem 1rem;
-          background: rgba(15, 23, 42, 0.6);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          border-radius: 12px;
-          transition: all 0.3s ease;
-        }
-        
-        .species-card:hover .species-card-inner {
-          background: rgba(15, 23, 42, 0.8);
-          border-color: var(--species-color);
-          box-shadow: 0 0 20px var(--species-glow);
-        }
-        
-        .species-card.active .species-card-inner {
-          border-color: var(--species-color);
-          box-shadow: 0 0 15px var(--species-glow);
-        }
-        
-        .species-indicator {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-        
-        .species-info {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 0.125rem;
-        }
-        
-        .species-name {
-          font-weight: 600;
-          font-size: 0.9rem;
-        }
-        
-        .species-count {
-          font-size: 0.7rem;
-          color: #64748b;
-          font-family: 'JetBrains Mono', monospace;
-        }
-        
-        .species-checkbox {
-          width: 20px;
-          height: 20px;
-          border: 2px solid rgba(255, 255, 255, 0.2);
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s ease;
-        }
-        
-        .species-checkbox svg {
-          width: 12px;
-          height: 12px;
-          opacity: 0;
-          transform: scale(0.5);
-          transition: all 0.2s ease;
-        }
-        
-        .species-checkbox.checked {
-          background: var(--species-color);
-          border-color: var(--species-color);
-        }
-        
-        .species-checkbox.checked svg {
-          opacity: 1;
-          transform: scale(1);
-          color: #0f172a;
-        }
-        
-        .toggles-section {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-        
-        .toggle-container {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          cursor: pointer;
-        }
-        
-        .toggle {
-          width: 44px;
-          height: 24px;
-          flex-shrink: 0;
-        }
-        
-        .toggle-track {
-          width: 100%;
-          height: 100%;
-          background: rgba(15, 23, 42, 0.8);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          position: relative;
-          transition: all 0.3s ease;
-        }
-        
-        .toggle.active .toggle-track {
-          background: linear-gradient(135deg, #4ECDC4 0%, #45B7D1 100%);
-          border-color: transparent;
-        }
-        
-        .toggle-thumb {
-          width: 18px;
-          height: 18px;
-          background: #fff;
-          border-radius: 50%;
-          position: absolute;
-          top: 2px;
-          left: 2px;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-        
-        .toggle.active .toggle-thumb {
-          transform: translateX(20px);
-        }
-        
-        .toggle-label {
-          font-size: 0.85rem;
-          color: #94a3b8;
-          transition: color 0.2s ease;
-        }
-        
-        .toggle-container:hover .toggle-label {
-          color: #e2e8f0;
-        }
-        
-        .chart-container {
-          flex: 1;
-          background: rgba(30, 41, 59, 0.4);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          border-radius: 20px;
-          padding: 1.5rem;
-          position: relative;
-          overflow: hidden;
-          animation: fadeIn 0.8s ease-out 0.6s both;
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        .chart-container::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(78, 205, 196, 0.5), transparent);
-        }
-        
-        .chart-inner {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-        
-        .chart-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        
-        .chart-title {
-          font-size: 1.1rem;
-          font-weight: 600;
-        }
-        
-        .legend {
-          display: flex;
-          gap: 1.5rem;
-        }
-        
-        .legend-item {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.8rem;
-          color: #94a3b8;
-        }
-        
-        .legend-dot {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-        }
-        
-        .chart-wrapper {
-          position: relative;
-        }
-        
-        .chart-svg {
-          display: block;
-        }
-        
-        .axis-tick {
-          fill: #64748b;
-          font-size: 11px;
-          font-family: 'JetBrains Mono', monospace;
-        }
-        
-        .axis-label {
-          fill: #94a3b8;
-          font-size: 12px;
-          font-weight: 500;
-        }
-        
-        .data-point {
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-        
-        .point-group {
-          animation: pointAppear 0.5s ease-out both;
-          animation-delay: var(--delay);
-        }
-        
-        @keyframes pointAppear {
-          from {
-            opacity: 0;
-            transform: scale(0);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        
-        .point-glow {
-          animation: pulseGlow 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulseGlow {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(1.2); }
-        }
-        
-        .density-path {
-          opacity: 0;
-          animation: densityFade 0.8s ease-out 0.8s forwards;
-        }
-        
-        .density-line {
-          stroke-dasharray: 1000;
-          stroke-dashoffset: 1000;
-          animation: drawLine 1.5s ease-out 0.8s forwards;
-        }
-        
-        @keyframes densityFade {
-          to { opacity: 1; }
-        }
-        
-        @keyframes drawLine {
-          to { stroke-dashoffset: 0; }
-        }
-        
-        .regression-line {
-          stroke-dasharray: 1000;
-          stroke-dashoffset: 1000;
-          animation: drawLine 1s ease-out 0.5s forwards;
-        }
-        
-        .tooltip {
-          position: absolute;
-          pointer-events: none;
-          background: rgba(15, 23, 42, 0.95);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-          z-index: 100;
-          animation: tooltipAppear 0.2s ease-out;
-          min-width: 180px;
-        }
-        
-        @keyframes tooltipAppear {
-          from {
-            opacity: 0;
-            transform: translateY(5px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        
-        .tooltip-header {
-          padding: 0.5rem 0.75rem;
-        }
-        
-        .tooltip-species {
-          font-weight: 600;
-          font-size: 0.85rem;
-          color: #0f172a;
-        }
-        
-        .tooltip-body {
-          padding: 0.75rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-        
-        .tooltip-row {
-          display: flex;
-          justify-content: space-between;
-          gap: 1rem;
-        }
-        
-        .tooltip-label {
-          color: #64748b;
-          font-size: 0.75rem;
-        }
-        
-        .tooltip-value {
-          color: #e2e8f0;
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.8rem;
-          font-weight: 500;
-        }
-        
-        .stats-panel {
-          margin-top: 1rem;
-        }
-        
-        .stats-header {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          color: #64748b;
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-bottom: 0.75rem;
-        }
-        
-        .stats-header svg {
-          width: 14px;
-          height: 14px;
-        }
-        
-        .stats-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.75rem;
-        }
-        
-        .stat-item {
-          background: rgba(15, 23, 42, 0.6);
-          padding: 0.75rem;
-          border-radius: 10px;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .stat-item.correlation {
-          grid-column: span 2;
-        }
-        
-        .stat-label {
-          display: block;
-          font-size: 0.7rem;
-          color: #64748b;
-          margin-bottom: 0.25rem;
-        }
-        
-        .stat-value {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 1.1rem;
-          font-weight: 600;
-        }
-        
-        .footer {
-          text-align: center;
-          margin-top: 2rem;
-          padding-top: 1.5rem;
-          border-top: 1px solid rgba(255, 255, 255, 0.05);
-          color: #475569;
-          font-size: 0.8rem;
-        }
-        
-        .footer a {
-          color: #4ECDC4;
-          text-decoration: none;
-        }
-        
-        .footer a:hover {
-          text-decoration: underline;
-        }
-      `}</style>
-      
-      <header className="header">
-        <div className="logo-container">
-          <div className="logo-icon">🐧</div>
-          <h1 className="title">Palmer Penguins</h1>
+    // Palmer Penguins Dataset
+    const rawData = [
+      { species: 'Adelie', bill_length: 39.1, bill_depth: 18.7, flipper_length: 181, body_mass: 3750 },
+      { species: 'Adelie', bill_length: 39.5, bill_depth: 17.4, flipper_length: 186, body_mass: 3800 },
+      { species: 'Adelie', bill_length: 40.3, bill_depth: 18.0, flipper_length: 195, body_mass: 3250 },
+      { species: 'Adelie', bill_length: 36.7, bill_depth: 19.3, flipper_length: 193, body_mass: 3450 },
+      { species: 'Adelie', bill_length: 39.3, bill_depth: 20.6, flipper_length: 190, body_mass: 3650 },
+      { species: 'Adelie', bill_length: 38.9, bill_depth: 17.8, flipper_length: 181, body_mass: 3625 },
+      { species: 'Adelie', bill_length: 39.2, bill_depth: 19.6, flipper_length: 195, body_mass: 4675 },
+      { species: 'Adelie', bill_length: 34.1, bill_depth: 18.1, flipper_length: 193, body_mass: 3475 },
+      { species: 'Adelie', bill_length: 42.0, bill_depth: 20.2, flipper_length: 190, body_mass: 4250 },
+      { species: 'Adelie', bill_length: 37.8, bill_depth: 17.1, flipper_length: 186, body_mass: 3300 },
+      { species: 'Adelie', bill_length: 37.8, bill_depth: 17.3, flipper_length: 180, body_mass: 3700 },
+      { species: 'Adelie', bill_length: 41.1, bill_depth: 17.6, flipper_length: 182, body_mass: 3200 },
+      { species: 'Adelie', bill_length: 38.6, bill_depth: 21.2, flipper_length: 191, body_mass: 3800 },
+      { species: 'Adelie', bill_length: 34.6, bill_depth: 21.1, flipper_length: 198, body_mass: 4400 },
+      { species: 'Adelie', bill_length: 36.6, bill_depth: 17.8, flipper_length: 185, body_mass: 3700 },
+      { species: 'Adelie', bill_length: 38.7, bill_depth: 19.0, flipper_length: 195, body_mass: 3450 },
+      { species: 'Adelie', bill_length: 42.5, bill_depth: 20.7, flipper_length: 197, body_mass: 4500 },
+      { species: 'Adelie', bill_length: 34.4, bill_depth: 18.4, flipper_length: 184, body_mass: 3325 },
+      { species: 'Adelie', bill_length: 46.0, bill_depth: 21.5, flipper_length: 194, body_mass: 4200 },
+      { species: 'Adelie', bill_length: 37.8, bill_depth: 18.3, flipper_length: 174, body_mass: 3400 },
+      { species: 'Adelie', bill_length: 37.7, bill_depth: 18.7, flipper_length: 180, body_mass: 3600 },
+      { species: 'Adelie', bill_length: 35.9, bill_depth: 19.2, flipper_length: 189, body_mass: 3800 },
+      { species: 'Adelie', bill_length: 38.2, bill_depth: 18.1, flipper_length: 185, body_mass: 3950 },
+      { species: 'Adelie', bill_length: 38.8, bill_depth: 17.2, flipper_length: 180, body_mass: 3800 },
+      { species: 'Adelie', bill_length: 35.3, bill_depth: 18.9, flipper_length: 187, body_mass: 3800 },
+      { species: 'Adelie', bill_length: 40.6, bill_depth: 18.6, flipper_length: 183, body_mass: 3550 },
+      { species: 'Adelie', bill_length: 40.5, bill_depth: 17.9, flipper_length: 187, body_mass: 3200 },
+      { species: 'Adelie', bill_length: 37.9, bill_depth: 18.6, flipper_length: 172, body_mass: 3150 },
+      { species: 'Adelie', bill_length: 40.5, bill_depth: 18.9, flipper_length: 180, body_mass: 3950 },
+      { species: 'Adelie', bill_length: 39.5, bill_depth: 16.7, flipper_length: 178, body_mass: 3250 },
+      { species: 'Adelie', bill_length: 37.2, bill_depth: 18.1, flipper_length: 178, body_mass: 3900 },
+      { species: 'Adelie', bill_length: 39.5, bill_depth: 17.8, flipper_length: 188, body_mass: 3300 },
+      { species: 'Adelie', bill_length: 40.9, bill_depth: 18.9, flipper_length: 184, body_mass: 3900 },
+      { species: 'Adelie', bill_length: 36.4, bill_depth: 17.0, flipper_length: 195, body_mass: 3325 },
+      { species: 'Adelie', bill_length: 39.2, bill_depth: 21.1, flipper_length: 196, body_mass: 4150 },
+      { species: 'Adelie', bill_length: 38.8, bill_depth: 20.0, flipper_length: 190, body_mass: 3950 },
+      { species: 'Adelie', bill_length: 42.2, bill_depth: 18.5, flipper_length: 180, body_mass: 3550 },
+      { species: 'Adelie', bill_length: 37.6, bill_depth: 19.3, flipper_length: 181, body_mass: 3300 },
+      { species: 'Adelie', bill_length: 39.8, bill_depth: 19.1, flipper_length: 184, body_mass: 4650 },
+      { species: 'Adelie', bill_length: 36.5, bill_depth: 18.0, flipper_length: 182, body_mass: 3150 },
+      { species: 'Adelie', bill_length: 40.8, bill_depth: 18.4, flipper_length: 195, body_mass: 3900 },
+      { species: 'Adelie', bill_length: 36.0, bill_depth: 18.5, flipper_length: 186, body_mass: 3100 },
+      { species: 'Adelie', bill_length: 44.1, bill_depth: 19.7, flipper_length: 196, body_mass: 4400 },
+      { species: 'Adelie', bill_length: 37.0, bill_depth: 16.9, flipper_length: 185, body_mass: 3000 },
+      { species: 'Adelie', bill_length: 39.6, bill_depth: 18.8, flipper_length: 190, body_mass: 4600 },
+      { species: 'Adelie', bill_length: 41.1, bill_depth: 19.0, flipper_length: 182, body_mass: 3425 },
+      { species: 'Adelie', bill_length: 37.5, bill_depth: 18.9, flipper_length: 179, body_mass: 2975 },
+      { species: 'Adelie', bill_length: 36.0, bill_depth: 17.9, flipper_length: 190, body_mass: 3450 },
+      { species: 'Adelie', bill_length: 42.3, bill_depth: 21.2, flipper_length: 191, body_mass: 4150 },
+      { species: 'Gentoo', bill_length: 46.1, bill_depth: 13.2, flipper_length: 211, body_mass: 4500 },
+      { species: 'Gentoo', bill_length: 50.0, bill_depth: 16.3, flipper_length: 230, body_mass: 5700 },
+      { species: 'Gentoo', bill_length: 48.7, bill_depth: 14.1, flipper_length: 210, body_mass: 4450 },
+      { species: 'Gentoo', bill_length: 50.0, bill_depth: 15.2, flipper_length: 218, body_mass: 5700 },
+      { species: 'Gentoo', bill_length: 47.6, bill_depth: 14.5, flipper_length: 215, body_mass: 5400 },
+      { species: 'Gentoo', bill_length: 46.5, bill_depth: 13.5, flipper_length: 210, body_mass: 4550 },
+      { species: 'Gentoo', bill_length: 45.4, bill_depth: 14.6, flipper_length: 211, body_mass: 4800 },
+      { species: 'Gentoo', bill_length: 46.7, bill_depth: 15.3, flipper_length: 219, body_mass: 5200 },
+      { species: 'Gentoo', bill_length: 43.3, bill_depth: 13.4, flipper_length: 209, body_mass: 4400 },
+      { species: 'Gentoo', bill_length: 46.8, bill_depth: 15.4, flipper_length: 215, body_mass: 5150 },
+      { species: 'Gentoo', bill_length: 40.9, bill_depth: 13.7, flipper_length: 214, body_mass: 4650 },
+      { species: 'Gentoo', bill_length: 49.0, bill_depth: 16.1, flipper_length: 216, body_mass: 5550 },
+      { species: 'Gentoo', bill_length: 45.5, bill_depth: 13.7, flipper_length: 214, body_mass: 4650 },
+      { species: 'Gentoo', bill_length: 48.4, bill_depth: 14.6, flipper_length: 213, body_mass: 5850 },
+      { species: 'Gentoo', bill_length: 45.8, bill_depth: 14.6, flipper_length: 210, body_mass: 4200 },
+      { species: 'Gentoo', bill_length: 49.3, bill_depth: 15.7, flipper_length: 217, body_mass: 5850 },
+      { species: 'Gentoo', bill_length: 42.0, bill_depth: 13.5, flipper_length: 210, body_mass: 4150 },
+      { species: 'Gentoo', bill_length: 49.2, bill_depth: 15.2, flipper_length: 221, body_mass: 6300 },
+      { species: 'Gentoo', bill_length: 46.2, bill_depth: 14.5, flipper_length: 209, body_mass: 4800 },
+      { species: 'Gentoo', bill_length: 48.7, bill_depth: 15.1, flipper_length: 222, body_mass: 5350 },
+      { species: 'Gentoo', bill_length: 50.2, bill_depth: 14.3, flipper_length: 218, body_mass: 5700 },
+      { species: 'Gentoo', bill_length: 45.1, bill_depth: 14.5, flipper_length: 215, body_mass: 5000 },
+      { species: 'Gentoo', bill_length: 46.5, bill_depth: 14.5, flipper_length: 213, body_mass: 4400 },
+      { species: 'Gentoo', bill_length: 46.3, bill_depth: 15.8, flipper_length: 215, body_mass: 5050 },
+      { species: 'Gentoo', bill_length: 42.9, bill_depth: 13.1, flipper_length: 215, body_mass: 5000 },
+      { species: 'Gentoo', bill_length: 46.1, bill_depth: 15.1, flipper_length: 215, body_mass: 5100 },
+      { species: 'Gentoo', bill_length: 47.8, bill_depth: 15.0, flipper_length: 215, body_mass: 5650 },
+      { species: 'Gentoo', bill_length: 48.2, bill_depth: 14.3, flipper_length: 210, body_mass: 4600 },
+      { species: 'Gentoo', bill_length: 50.0, bill_depth: 15.3, flipper_length: 220, body_mass: 5550 },
+      { species: 'Gentoo', bill_length: 47.3, bill_depth: 15.3, flipper_length: 222, body_mass: 5250 },
+      { species: 'Gentoo', bill_length: 42.8, bill_depth: 14.2, flipper_length: 209, body_mass: 4700 },
+      { species: 'Gentoo', bill_length: 45.1, bill_depth: 14.5, flipper_length: 207, body_mass: 5050 },
+      { species: 'Gentoo', bill_length: 59.6, bill_depth: 17.0, flipper_length: 230, body_mass: 6050 },
+      { species: 'Gentoo', bill_length: 49.1, bill_depth: 14.8, flipper_length: 220, body_mass: 5150 },
+      { species: 'Gentoo', bill_length: 48.4, bill_depth: 16.3, flipper_length: 220, body_mass: 5400 },
+      { species: 'Gentoo', bill_length: 42.6, bill_depth: 13.7, flipper_length: 213, body_mass: 4950 },
+      { species: 'Gentoo', bill_length: 44.4, bill_depth: 17.3, flipper_length: 219, body_mass: 5250 },
+      { species: 'Gentoo', bill_length: 44.0, bill_depth: 13.6, flipper_length: 208, body_mass: 4350 },
+      { species: 'Gentoo', bill_length: 48.7, bill_depth: 15.7, flipper_length: 208, body_mass: 5350 },
+      { species: 'Gentoo', bill_length: 42.7, bill_depth: 13.7, flipper_length: 208, body_mass: 3950 },
+      { species: 'Gentoo', bill_length: 49.6, bill_depth: 16.0, flipper_length: 225, body_mass: 5700 },
+      { species: 'Gentoo', bill_length: 45.3, bill_depth: 13.7, flipper_length: 210, body_mass: 4300 },
+      { species: 'Gentoo', bill_length: 49.6, bill_depth: 15.0, flipper_length: 216, body_mass: 4750 },
+      { species: 'Gentoo', bill_length: 50.5, bill_depth: 15.9, flipper_length: 222, body_mass: 5550 },
+      { species: 'Gentoo', bill_length: 43.6, bill_depth: 13.9, flipper_length: 217, body_mass: 4900 },
+      { species: 'Gentoo', bill_length: 45.5, bill_depth: 13.9, flipper_length: 210, body_mass: 4200 },
+      { species: 'Gentoo', bill_length: 50.0, bill_depth: 15.9, flipper_length: 224, body_mass: 5350 },
+      { species: 'Gentoo', bill_length: 44.9, bill_depth: 13.3, flipper_length: 213, body_mass: 5100 },
+      { species: 'Chinstrap', bill_length: 46.5, bill_depth: 17.9, flipper_length: 192, body_mass: 3500 },
+      { species: 'Chinstrap', bill_length: 50.0, bill_depth: 19.5, flipper_length: 196, body_mass: 3900 },
+      { species: 'Chinstrap', bill_length: 51.3, bill_depth: 19.2, flipper_length: 193, body_mass: 3650 },
+      { species: 'Chinstrap', bill_length: 45.4, bill_depth: 18.7, flipper_length: 188, body_mass: 3525 },
+      { species: 'Chinstrap', bill_length: 52.7, bill_depth: 19.8, flipper_length: 197, body_mass: 3725 },
+      { species: 'Chinstrap', bill_length: 45.2, bill_depth: 17.8, flipper_length: 198, body_mass: 3950 },
+      { species: 'Chinstrap', bill_length: 46.1, bill_depth: 18.2, flipper_length: 178, body_mass: 3250 },
+      { species: 'Chinstrap', bill_length: 51.3, bill_depth: 18.2, flipper_length: 197, body_mass: 3750 },
+      { species: 'Chinstrap', bill_length: 46.0, bill_depth: 18.9, flipper_length: 195, body_mass: 4150 },
+      { species: 'Chinstrap', bill_length: 51.3, bill_depth: 19.9, flipper_length: 198, body_mass: 3700 },
+      { species: 'Chinstrap', bill_length: 46.6, bill_depth: 17.8, flipper_length: 193, body_mass: 3800 },
+      { species: 'Chinstrap', bill_length: 51.7, bill_depth: 20.3, flipper_length: 194, body_mass: 3775 },
+      { species: 'Chinstrap', bill_length: 47.0, bill_depth: 17.3, flipper_length: 185, body_mass: 3700 },
+      { species: 'Chinstrap', bill_length: 52.0, bill_depth: 18.1, flipper_length: 201, body_mass: 4050 },
+      { species: 'Chinstrap', bill_length: 45.9, bill_depth: 17.1, flipper_length: 190, body_mass: 3575 },
+      { species: 'Chinstrap', bill_length: 50.5, bill_depth: 19.6, flipper_length: 201, body_mass: 4050 },
+      { species: 'Chinstrap', bill_length: 50.3, bill_depth: 20.0, flipper_length: 197, body_mass: 3300 },
+      { species: 'Chinstrap', bill_length: 58.0, bill_depth: 17.8, flipper_length: 181, body_mass: 3700 },
+      { species: 'Chinstrap', bill_length: 46.4, bill_depth: 18.6, flipper_length: 190, body_mass: 3450 },
+      { species: 'Chinstrap', bill_length: 49.2, bill_depth: 18.2, flipper_length: 195, body_mass: 4400 },
+      { species: 'Chinstrap', bill_length: 42.4, bill_depth: 17.3, flipper_length: 181, body_mass: 3600 },
+      { species: 'Chinstrap', bill_length: 48.5, bill_depth: 17.5, flipper_length: 191, body_mass: 3400 },
+      { species: 'Chinstrap', bill_length: 43.2, bill_depth: 16.6, flipper_length: 187, body_mass: 2900 },
+      { species: 'Chinstrap', bill_length: 50.6, bill_depth: 19.4, flipper_length: 193, body_mass: 3800 },
+      { species: 'Chinstrap', bill_length: 46.7, bill_depth: 17.9, flipper_length: 195, body_mass: 3300 },
+      { species: 'Chinstrap', bill_length: 52.0, bill_depth: 19.0, flipper_length: 197, body_mass: 4150 },
+      { species: 'Chinstrap', bill_length: 50.5, bill_depth: 18.4, flipper_length: 200, body_mass: 3400 },
+      { species: 'Chinstrap', bill_length: 49.5, bill_depth: 19.0, flipper_length: 200, body_mass: 3800 },
+      { species: 'Chinstrap', bill_length: 46.4, bill_depth: 17.8, flipper_length: 191, body_mass: 3700 },
+      { species: 'Chinstrap', bill_length: 52.8, bill_depth: 20.0, flipper_length: 205, body_mass: 4550 },
+      { species: 'Chinstrap', bill_length: 40.9, bill_depth: 16.6, flipper_length: 187, body_mass: 3200 },
+      { species: 'Chinstrap', bill_length: 54.2, bill_depth: 20.8, flipper_length: 201, body_mass: 4300 },
+      { species: 'Chinstrap', bill_length: 42.5, bill_depth: 16.7, flipper_length: 187, body_mass: 3350 },
+      { species: 'Chinstrap', bill_length: 51.0, bill_depth: 18.8, flipper_length: 203, body_mass: 4100 },
+      { species: 'Chinstrap', bill_length: 49.7, bill_depth: 18.6, flipper_length: 195, body_mass: 3600 },
+      { species: 'Chinstrap', bill_length: 47.5, bill_depth: 16.8, flipper_length: 199, body_mass: 3900 },
+      { species: 'Chinstrap', bill_length: 47.6, bill_depth: 18.3, flipper_length: 195, body_mass: 3850 },
+      { species: 'Chinstrap', bill_length: 52.0, bill_depth: 20.7, flipper_length: 210, body_mass: 4800 },
+      { species: 'Chinstrap', bill_length: 46.9, bill_depth: 16.6, flipper_length: 192, body_mass: 2700 },
+      { species: 'Chinstrap', bill_length: 53.5, bill_depth: 19.9, flipper_length: 205, body_mass: 4500 },
+      { species: 'Chinstrap', bill_length: 49.0, bill_depth: 19.5, flipper_length: 210, body_mass: 3950 },
+      { species: 'Chinstrap', bill_length: 46.2, bill_depth: 17.5, flipper_length: 187, body_mass: 3650 },
+      { species: 'Chinstrap', bill_length: 50.9, bill_depth: 19.1, flipper_length: 196, body_mass: 3550 },
+      { species: 'Chinstrap', bill_length: 45.5, bill_depth: 17.0, flipper_length: 196, body_mass: 3500 },
+      { species: 'Chinstrap', bill_length: 50.9, bill_depth: 17.9, flipper_length: 196, body_mass: 3675 },
+      { species: 'Chinstrap', bill_length: 50.8, bill_depth: 18.5, flipper_length: 201, body_mass: 4450 },
+      { species: 'Chinstrap', bill_length: 50.1, bill_depth: 17.9, flipper_length: 190, body_mass: 3400 },
+      { species: 'Chinstrap', bill_length: 49.0, bill_depth: 19.6, flipper_length: 212, body_mass: 4300 },
+      { species: 'Chinstrap', bill_length: 51.5, bill_depth: 18.7, flipper_length: 187, body_mass: 3250 },
+      { species: 'Chinstrap', bill_length: 49.8, bill_depth: 17.3, flipper_length: 198, body_mass: 3675 },
+    ];
+
+    const variables = [
+      { key: 'bill_length', label: 'Bill Length', unit: 'mm' },
+      { key: 'bill_depth', label: 'Bill Depth', unit: 'mm' },
+      { key: 'flipper_length', label: 'Flipper Length', unit: 'mm' },
+      { key: 'body_mass', label: 'Body Mass', unit: 'g' },
+    ];
+
+    const speciesConfig = {
+      Adelie: { color: '#FF6B6B', gradient: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%)', glow: 'rgba(255, 107, 107, 0.6)' },
+      Gentoo: { color: '#4ECDC4', gradient: 'linear-gradient(135deg, #4ECDC4 0%, #7EDCD6 100%)', glow: 'rgba(78, 205, 196, 0.6)' },
+      Chinstrap: { color: '#45B7D1', gradient: 'linear-gradient(135deg, #45B7D1 0%, #6FC8DD 100%)', glow: 'rgba(69, 183, 209, 0.6)' },
+    };
+
+    const calculateDensity = (data, accessor, bandwidth = 1) => {
+      const values = data.map(accessor);
+      if (values.length === 0) return [];
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const steps = 100;
+      const stepSize = (max - min) / steps;
+      const kernel = (u) => Math.exp(-0.5 * u * u) / Math.sqrt(2 * Math.PI);
+      const densityPoints = [];
+      for (let i = 0; i <= steps; i++) {
+        const x = min + i * stepSize;
+        let sum = 0;
+        for (const v of values) { sum += kernel((x - v) / bandwidth); }
+        densityPoints.push({ x, y: sum / (values.length * bandwidth) });
+      }
+      const maxY = Math.max(...densityPoints.map(d => d.y));
+      return densityPoints.map(d => ({ x: d.x, y: d.y / maxY }));
+    };
+
+    const Toggle = ({ checked, onChange, label }) => (
+      <label className="toggle-container">
+        <div className={`toggle ${checked ? 'active' : ''}`} onClick={() => onChange(!checked)}>
+          <div className="toggle-track"><div className="toggle-thumb" /></div>
         </div>
-        <p className="subtitle">Interactive Morphometric Analysis Dashboard</p>
-      </header>
-      
-      <main className="main-content">
-        <aside className="sidebar">
-          <div className="panel">
-            <div className="panel-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-              Variables
-            </div>
-            <Select
-              value={xVar}
-              onChange={setXVar}
-              options={variables}
-              label="X Axis"
-            />
-            <Select
-              value={yVar}
-              onChange={setYVar}
-              options={variables}
-              label="Y Axis"
-            />
+        <span className="toggle-label">{label}</span>
+      </label>
+    );
+
+    const SpeciesCard = ({ species, config, checked, onChange, count, animationDelay }) => (
+      <div className={`species-card ${checked ? 'active' : ''}`}
+        style={{ '--species-color': config.color, '--species-glow': config.glow, animationDelay: `${animationDelay}ms` }}
+        onClick={() => onChange(!checked)}>
+        <div className="species-card-inner">
+          <div className="species-indicator" style={{ background: config.gradient }} />
+          <div className="species-info">
+            <span className="species-name">{species}</span>
+            <span className="species-count">{count} specimens</span>
           </div>
-          
-          <div className="panel">
-            <div className="panel-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-              </svg>
-              Filter Species
-            </div>
-            <div className="species-filters">
-              {Object.entries(speciesConfig).map(([species, config], i) => (
-                <SpeciesCard
-                  key={species}
-                  species={species}
-                  config={config}
-                  checked={selectedSpecies[species]}
-                  onChange={(checked) => setSelectedSpecies(prev => ({ ...prev, [species]: checked }))}
-                  count={speciesCounts[species]}
-                  animationDelay={i * 100}
-                />
-              ))}
-            </div>
+          <div className={`species-checkbox ${checked ? 'checked' : ''}`}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20,6 9,17 4,12" /></svg>
           </div>
-          
-          <div className="panel">
-            <div className="panel-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <line x1="9" y1="3" x2="9" y2="21" />
-              </svg>
-              Display Options
-            </div>
-            <div className="toggles-section">
-              <Toggle
-                checked={showColors}
-                onChange={setShowColors}
-                label="Color by species"
-              />
-              <Toggle
-                checked={showMarginal}
-                onChange={setShowMarginal}
-                label="Marginal distributions"
-              />
-              <Toggle
-                checked={showSmoother}
-                onChange={setShowSmoother}
-                label="Trend line"
-              />
-            </div>
+        </div>
+      </div>
+    );
+
+    const Select = ({ value, onChange, options, label }) => (
+      <div className="select-container">
+        <label className="select-label">{label}</label>
+        <div className="select-wrapper">
+          <select value={value} onChange={(e) => onChange(e.target.value)}>
+            {options.map(opt => (<option key={opt.key} value={opt.key}>{opt.label} ({opt.unit})</option>))}
+          </select>
+          <svg className="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6,9 12,15 18,9" /></svg>
+        </div>
+      </div>
+    );
+
+    const Tooltip = ({ data, x, y, xVar, yVar }) => {
+      if (!data) return null;
+      const xLabel = variables.find(v => v.key === xVar);
+      const yLabel = variables.find(v => v.key === yVar);
+      const config = speciesConfig[data.species];
+      return (
+        <div className="tooltip" style={{ left: x + 15, top: y - 10, '--tooltip-color': config.color }}>
+          <div className="tooltip-header" style={{ background: config.gradient }}>
+            <span className="tooltip-species">{data.species}</span>
           </div>
-          
-          <StatsPanel data={filteredData} xVar={xVar} yVar={yVar} />
-        </aside>
-        
-        <div className="chart-container" onMouseMove={handleMouseMove}>
-          <div className="chart-inner">
-            <div className="chart-header">
-              <span className="chart-title">
-                {variables.find(v => v.key === yVar)?.label} vs {variables.find(v => v.key === xVar)?.label}
-              </span>
-              {showColors && (
-                <div className="legend">
-                  {Object.entries(speciesConfig).filter(([s]) => selectedSpecies[s]).map(([species, config]) => (
-                    <div key={species} className="legend-item">
-                      <div className="legend-dot" style={{ background: config.color }} />
-                      <span>{species}</span>
-                    </div>
+          <div className="tooltip-body">
+            <div className="tooltip-row"><span className="tooltip-label">{xLabel.label}</span><span className="tooltip-value">{data[xVar].toFixed(1)} {xLabel.unit}</span></div>
+            <div className="tooltip-row"><span className="tooltip-label">{yLabel.label}</span><span className="tooltip-value">{data[yVar].toFixed(1)} {yLabel.unit}</span></div>
+            <div className="tooltip-row"><span className="tooltip-label">Body Mass</span><span className="tooltip-value">{data.body_mass.toLocaleString()} g</span></div>
+          </div>
+        </div>
+      );
+    };
+
+    const StatsPanel = ({ data, xVar, yVar }) => {
+      const stats = useMemo(() => {
+        if (data.length === 0) return null;
+        const xValues = data.map(d => d[xVar]);
+        const yValues = data.map(d => d[yVar]);
+        const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+        const std = arr => { const m = mean(arr); return Math.sqrt(arr.reduce((acc, val) => acc + Math.pow(val - m, 2), 0) / arr.length); };
+        const xMean = mean(xValues);
+        const yMean = mean(yValues);
+        const xStd = std(xValues);
+        const yStd = std(yValues);
+        let sumNum = 0;
+        for (let i = 0; i < data.length; i++) { sumNum += (xValues[i] - xMean) * (yValues[i] - yMean); }
+        const correlation = sumNum / (data.length * xStd * yStd);
+        return { xMean, yMean, xStd, yStd, correlation, n: data.length };
+      }, [data, xVar, yVar]);
+      if (!stats) return null;
+      return (
+        <div className="stats-panel">
+          <div className="stats-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v18h18" /><path d="M18 9l-5 5-4-4-3 3" /></svg>
+            <span>Statistics</span>
+          </div>
+          <div className="stats-grid">
+            <div className="stat-item"><span className="stat-label">Sample Size</span><span className="stat-value">{stats.n}</span></div>
+            <div className="stat-item correlation"><span className="stat-label">Correlation (r)</span><span className="stat-value" style={{ color: stats.correlation > 0 ? '#4ECDC4' : '#FF6B6B' }}>{stats.correlation.toFixed(3)}</span></div>
+          </div>
+        </div>
+      );
+    };
+
+    const Chart = ({ data, xVar, yVar, showColors, showMarginal, showSmoother, hoveredPoint, setHoveredPoint }) => {
+      const margin = { top: showMarginal ? 60 : 20, right: showMarginal ? 60 : 20, bottom: 60, left: 70 };
+      const width = 700;
+      const height = 500;
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+
+      const xExtent = useMemo(() => {
+        const vals = rawData.map(d => d[xVar]);
+        const min = Math.min(...vals);
+        const max = Math.max(...vals);
+        const padding = (max - min) * 0.1;
+        return [min - padding, max + padding];
+      }, [xVar]);
+
+      const yExtent = useMemo(() => {
+        const vals = rawData.map(d => d[yVar]);
+        const min = Math.min(...vals);
+        const max = Math.max(...vals);
+        const padding = (max - min) * 0.1;
+        return [min - padding, max + padding];
+      }, [yVar]);
+
+      const xScale = useMemo(() => d3.scaleLinear().domain(xExtent).range([0, innerWidth]), [xExtent, innerWidth]);
+      const yScale = useMemo(() => d3.scaleLinear().domain(yExtent).range([innerHeight, 0]), [yExtent, innerHeight]);
+      const xTicks = xScale.ticks(6);
+      const yTicks = yScale.ticks(6);
+
+      const densityCurves = useMemo(() => {
+        if (!showMarginal) return {};
+        const curves = {};
+        Object.keys(speciesConfig).forEach(species => {
+          const speciesData = data.filter(d => d.species === species);
+          if (speciesData.length > 0) {
+            curves[species] = { x: calculateDensity(speciesData, d => d[xVar], 1), y: calculateDensity(speciesData, d => d[yVar], 0.5) };
+          }
+        });
+        return curves;
+      }, [data, xVar, yVar, showMarginal]);
+
+      const regressionLine = useMemo(() => {
+        if (!showSmoother || data.length < 2) return null;
+        const xVals = data.map(d => d[xVar]);
+        const yVals = data.map(d => d[yVar]);
+        const n = data.length;
+        const xMean = xVals.reduce((a, b) => a + b, 0) / n;
+        const yMean = yVals.reduce((a, b) => a + b, 0) / n;
+        let num = 0, den = 0;
+        for (let i = 0; i < n; i++) { num += (xVals[i] - xMean) * (yVals[i] - yMean); den += (xVals[i] - xMean) ** 2; }
+        const slope = num / den;
+        const intercept = yMean - slope * xMean;
+        const x1 = xExtent[0];
+        const x2 = xExtent[1];
+        return { x1: xScale(x1), y1: yScale(slope * x1 + intercept), x2: xScale(x2), y2: yScale(slope * x2 + intercept) };
+      }, [data, xVar, yVar, showSmoother, xScale, yScale, xExtent]);
+
+      const xVarLabel = variables.find(v => v.key === xVar);
+      const yVarLabel = variables.find(v => v.key === yVar);
+
+      return (
+        <svg width={width} height={height} className="chart-svg">
+          <defs>
+            {Object.entries(speciesConfig).map(([species, config]) => (
+              <React.Fragment key={species}>
+                <radialGradient id={`glow-${species}`}><stop offset="0%" stopColor={config.color} stopOpacity="0.8" /><stop offset="100%" stopColor={config.color} stopOpacity="0" /></radialGradient>
+                <filter id={`shadow-${species}`} x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="3" floodColor={config.color} floodOpacity="0.5" /></filter>
+                <linearGradient id={`density-x-${species}`} x1="0%" y1="100%" x2="0%" y2="0%"><stop offset="0%" stopColor={config.color} stopOpacity="0.1" /><stop offset="100%" stopColor={config.color} stopOpacity="0.4" /></linearGradient>
+                <linearGradient id={`density-y-${species}`} x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor={config.color} stopOpacity="0.1" /><stop offset="100%" stopColor={config.color} stopOpacity="0.4" /></linearGradient>
+              </React.Fragment>
+            ))}
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" /></pattern>
+          </defs>
+          <g transform={`translate(${margin.left}, ${margin.top})`}>
+            <rect x={0} y={0} width={innerWidth} height={innerHeight} fill="rgba(15, 23, 42, 0.6)" rx="8" />
+            <rect x={0} y={0} width={innerWidth} height={innerHeight} fill="url(#grid)" rx="8" />
+            {xTicks.map((tick, i) => (<line key={`x-grid-${i}`} x1={xScale(tick)} y1={0} x2={xScale(tick)} y2={innerHeight} stroke="rgba(255,255,255,0.05)" strokeDasharray="4,4" />))}
+            {yTicks.map((tick, i) => (<line key={`y-grid-${i}`} x1={0} y1={yScale(tick)} x2={innerWidth} y2={yScale(tick)} stroke="rgba(255,255,255,0.05)" strokeDasharray="4,4" />))}
+            {regressionLine && (<line x1={regressionLine.x1} y1={regressionLine.y1} x2={regressionLine.x2} y2={regressionLine.y2} stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeDasharray="8,4" className="regression-line" />)}
+            <g className="points-container">
+              {data.map((d, i) => {
+                const config = speciesConfig[d.species];
+                const isHovered = hoveredPoint === d;
+                const cx = xScale(d[xVar]);
+                const cy = yScale(d[yVar]);
+                return (
+                  <g key={i} className={`point-group ${isHovered ? 'hovered' : ''}`} style={{ animationDelay: `${i * 5}ms` }}>
+                    {isHovered && (<circle cx={cx} cy={cy} r={20} fill={`url(#glow-${d.species})`} className="point-glow" />)}
+                    <circle cx={cx} cy={cy} r={isHovered ? 8 : 5} fill={showColors ? config.color : 'rgba(255,255,255,0.7)'} stroke={showColors ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.5)'} strokeWidth={isHovered ? 2 : 1} filter={isHovered && showColors ? `url(#shadow-${d.species})` : undefined} className="data-point" onMouseEnter={() => setHoveredPoint(d)} onMouseLeave={() => setHoveredPoint(null)} />
+                  </g>
+                );
+              })}
+            </g>
+            <g transform={`translate(0, ${innerHeight})`}>
+              <line x1={0} y1={0} x2={innerWidth} y2={0} stroke="rgba(255,255,255,0.2)" />
+              {xTicks.map((tick, i) => (<g key={i} transform={`translate(${xScale(tick)}, 0)`}><line y1={0} y2={6} stroke="rgba(255,255,255,0.3)" /><text y={20} textAnchor="middle" className="axis-tick">{tick}</text></g>))}
+              <text x={innerWidth / 2} y={45} textAnchor="middle" className="axis-label">{xVarLabel.label} ({xVarLabel.unit})</text>
+            </g>
+            <g>
+              <line x1={0} y1={0} x2={0} y2={innerHeight} stroke="rgba(255,255,255,0.2)" />
+              {yTicks.map((tick, i) => (<g key={i} transform={`translate(0, ${yScale(tick)})`}><line x1={-6} x2={0} stroke="rgba(255,255,255,0.3)" /><text x={-10} textAnchor="end" dominantBaseline="middle" className="axis-tick">{tick}</text></g>))}
+              <text transform={`translate(-50, ${innerHeight / 2}) rotate(-90)`} textAnchor="middle" className="axis-label">{yVarLabel.label} ({yVarLabel.unit})</text>
+            </g>
+            {showMarginal && (
+              <g transform={`translate(0, -50)`}>
+                {Object.entries(densityCurves).map(([species, curves]) => {
+                  if (!curves || !curves.x || curves.x.length === 0) return null;
+                  const config = speciesConfig[species];
+                  const pathData = curves.x.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xScale(p.x)} ${50 - p.y * 40}`).join(' ') + ` L ${xScale(curves.x[curves.x.length - 1].x)} 50 L ${xScale(curves.x[0].x)} 50 Z`;
+                  return (
+                    <g key={species}>
+                      <path d={pathData} fill={`url(#density-x-${species})`} className="density-path" />
+                      <path d={curves.x.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xScale(p.x)} ${50 - p.y * 40}`).join(' ')} fill="none" stroke={config.color} strokeWidth="2" opacity="0.8" className="density-line" />
+                    </g>
+                  );
+                })}
+              </g>
+            )}
+            {showMarginal && (
+              <g transform={`translate(${innerWidth + 10}, 0)`}>
+                {Object.entries(densityCurves).map(([species, curves]) => {
+                  if (!curves || !curves.y || curves.y.length === 0) return null;
+                  const config = speciesConfig[species];
+                  const pathData = curves.y.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.y * 40} ${yScale(p.x)}`).join(' ') + ` L 0 ${yScale(curves.y[curves.y.length - 1].x)} L 0 ${yScale(curves.y[0].x)} Z`;
+                  return (
+                    <g key={species}>
+                      <path d={pathData} fill={`url(#density-y-${species})`} className="density-path" />
+                      <path d={curves.y.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.y * 40} ${yScale(p.x)}`).join(' ')} fill="none" stroke={config.color} strokeWidth="2" opacity="0.8" className="density-line" />
+                    </g>
+                  );
+                })}
+              </g>
+            )}
+          </g>
+        </svg>
+      );
+    };
+
+    function App() {
+      const [xVar, setXVar] = useState('bill_length');
+      const [yVar, setYVar] = useState('bill_depth');
+      const [selectedSpecies, setSelectedSpecies] = useState({ Adelie: true, Gentoo: true, Chinstrap: true });
+      const [showColors, setShowColors] = useState(true);
+      const [showMarginal, setShowMarginal] = useState(true);
+      const [showSmoother, setShowSmoother] = useState(false);
+      const [hoveredPoint, setHoveredPoint] = useState(null);
+      const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+      const [isLoaded, setIsLoaded] = useState(false);
+
+      useEffect(() => { setTimeout(() => setIsLoaded(true), 100); }, []);
+
+      const handleMouseMove = useCallback((e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      }, []);
+
+      const filteredData = useMemo(() => rawData.filter(d => selectedSpecies[d.species]), [selectedSpecies]);
+      const speciesCounts = useMemo(() => {
+        const counts = {};
+        Object.keys(speciesConfig).forEach(s => { counts[s] = rawData.filter(d => d.species === s).length; });
+        return counts;
+      }, []);
+
+      return (
+        <div className={`app-container ${isLoaded ? 'loaded' : ''}`}>
+          <header className="header">
+            <div className="logo-container">
+              <div className="logo-icon">🐧</div>
+              <h1 className="title">Palmer Penguins</h1>
+            </div>
+            <p className="subtitle">Interactive Morphometric Analysis Dashboard</p>
+          </header>
+          <main className="main-content">
+            <aside className="sidebar">
+              <div className="panel">
+                <div className="panel-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                  Variables
+                </div>
+                <Select value={xVar} onChange={setXVar} options={variables} label="X Axis" />
+                <Select value={yVar} onChange={setYVar} options={variables} label="Y Axis" />
+              </div>
+              <div className="panel">
+                <div className="panel-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
+                  Filter Species
+                </div>
+                <div className="species-filters">
+                  {Object.entries(speciesConfig).map(([species, config], i) => (
+                    <SpeciesCard key={species} species={species} config={config} checked={selectedSpecies[species]} onChange={(checked) => setSelectedSpecies(prev => ({ ...prev, [species]: checked }))} count={speciesCounts[species]} animationDelay={i * 100} />
                   ))}
                 </div>
-              )}
+              </div>
+              <div className="panel">
+                <div className="panel-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="3" x2="9" y2="21" /></svg>
+                  Display Options
+                </div>
+                <div className="toggles-section">
+                  <Toggle checked={showColors} onChange={setShowColors} label="Color by species" />
+                  <Toggle checked={showMarginal} onChange={setShowMarginal} label="Marginal distributions" />
+                  <Toggle checked={showSmoother} onChange={setShowSmoother} label="Trend line" />
+                </div>
+              </div>
+              <StatsPanel data={filteredData} xVar={xVar} yVar={yVar} />
+            </aside>
+            <div className="chart-container" onMouseMove={handleMouseMove}>
+              <div className="chart-inner">
+                <div className="chart-header">
+                  <span className="chart-title">{variables.find(v => v.key === yVar)?.label} vs {variables.find(v => v.key === xVar)?.label}</span>
+                  {showColors && (
+                    <div className="legend">
+                      {Object.entries(speciesConfig).filter(([s]) => selectedSpecies[s]).map(([species, config]) => (
+                        <div key={species} className="legend-item"><div className="legend-dot" style={{ background: config.color }} /><span>{species}</span></div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="chart-wrapper">
+                  <Chart data={filteredData} xVar={xVar} yVar={yVar} showColors={showColors} showMarginal={showMarginal} showSmoother={showSmoother} hoveredPoint={hoveredPoint} setHoveredPoint={setHoveredPoint} />
+                  <Tooltip data={hoveredPoint} x={mousePos.x} y={mousePos.y} xVar={xVar} yVar={yVar} />
+                </div>
+              </div>
             </div>
-            <div className="chart-wrapper">
-              <Chart
-                data={filteredData}
-                xVar={xVar}
-                yVar={yVar}
-                showColors={showColors}
-                showMarginal={showMarginal}
-                showSmoother={showSmoother}
-                hoveredPoint={hoveredPoint}
-                setHoveredPoint={setHoveredPoint}
-              />
-              <Tooltip
-                data={hoveredPoint}
-                x={mousePos.x}
-                y={mousePos.y}
-                xVar={xVar}
-                yVar={yVar}
-              />
-            </div>
-          </div>
+          </main>
+          <footer className="footer">Palmer Penguins Dataset · Data collected by Dr. Kristen Gorman · <a href="https://allisonhorst.github.io/palmerpenguins/" target="_blank" rel="noopener noreferrer">Learn more</a></footer>
         </div>
-      </main>
-      
-      <footer className="footer">
-        Palmer Penguins Dataset · Data collected by Dr. Kristen Gorman · 
-        <a href="https://allisonhorst.github.io/palmerpenguins/" target="_blank" rel="noopener noreferrer"> Learn more</a>
-      </footer>
-    </div>
-  );
-}
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
